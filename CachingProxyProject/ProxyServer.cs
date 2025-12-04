@@ -55,7 +55,5 @@ public class ProxyServer(int port, string origin)
 
         await using var stream = context.Response.OutputStream;
         await stream.WriteAsync(content);
-
-        context.Response.OutputStream.Close();
     }
 }
