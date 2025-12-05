@@ -24,9 +24,6 @@ public class ProxyServer(int port, string origin)
             return;
 
         var context = await _listener.GetContextAsync();
-
-        Console.WriteLine($"{context.Request.HttpMethod} {context.Request.Url!.AbsoluteUri}");
-
         var client = new HttpClient { BaseAddress = new Uri(Origin) };
         var request = ListenerRequestToMessage(context.Request);
         var response = await client.SendAsync(request);
@@ -59,5 +56,29 @@ public class ProxyServer(int port, string origin)
 
         await using var stream = listenerResponse.OutputStream;
         await stream.WriteAsync(content);
+    }
+
+    private static void PrintRequest(HttpListenerContext context)
+    {
+        Console.WriteLine($"{context.Request.HttpMethod} {context.Request.Url!.AbsoluteUri}");
+        PrintRequestHeaders(context.Request);
+        PrintResponseHeaders(context.Response);
+        Console.WriteLine();
+    }
+
+    private static void PrintRequestHeaders(HttpListenerRequest request)
+    {
+        Console.WriteLine("---REQUEST HEADERS---");
+        foreach (var header in request.Headers.AllKeys)
+            Console.WriteLine($"{header}: {request.Headers[header]}");
+        Console.WriteLine();
+    }
+    
+    private static void PrintResponseHeaders(HttpListenerResponse response)
+    {
+        Console.WriteLine("---RESPONSE HEADERS---");
+        foreach (var header in response.Headers.AllKeys)
+            Console.WriteLine($"{header}: {response.Headers[header]}");
+        Console.WriteLine();
     }
 }
