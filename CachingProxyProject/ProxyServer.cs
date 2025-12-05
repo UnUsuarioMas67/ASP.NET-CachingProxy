@@ -28,10 +28,12 @@ public class ProxyServer(int port, string origin)
         Console.WriteLine($"{context.Request.HttpMethod} {context.Request.Url!.AbsoluteUri}");
 
         var client = new HttpClient { BaseAddress = new Uri(Origin) };
-        var request = CreateRequest(context);
+        var request = ListenerRequestToMessage(context.Request);
         var response = await client.SendAsync(request);
-
-        await SetListenerResponse(context, response);
+        
+        await SetListenerResponseFromMessage(context.Response, response);
+        
+        PrintRequest(context);
     }
 
     public void Stop()
@@ -39,21 +41,23 @@ public class ProxyServer(int port, string origin)
         _listener.Stop();
     }
 
-    private static HttpRequestMessage CreateRequest(HttpListenerContext context)
+    private static HttpRequestMessage ListenerRequestToMessage(HttpListenerRequest request)
     {
-        var method = new HttpMethod(context.Request.HttpMethod);
-        var request = new HttpRequestMessage(method, context.Request.RawUrl);
-        return request;
+        var method = new HttpMethod(request.HttpMethod);
+        var requestMessage = new HttpRequestMessage(method, request.RawUrl);
+        return requestMessage;
     }
 
-    private static async Task SetListenerResponse(HttpListenerContext context, HttpResponseMessage response)
+    private static async Task SetListenerResponseFromMessage(
+        HttpListenerResponse listenerResponse,
+        HttpResponseMessage responseMessage)
     {
-        context.Response.StatusCode = (int)response.StatusCode;
-        context.Response.ContentType = response.Content.Headers.ContentType?.MediaType;
-        
-        var content = await response.Content.ReadAsByteArrayAsync();
+        listenerResponse.StatusCode = (int)responseMessage.StatusCode;
+        listenerResponse.ContentType = responseMessage.Content.Headers.ContentType?.MediaType;
 
-        await using var stream = context.Response.OutputStream;
+        var content = await responseMessage.Content.ReadAsByteArrayAsync();
+
+        await using var stream = listenerResponse.OutputStream;
         await stream.WriteAsync(content);
     }
 }
