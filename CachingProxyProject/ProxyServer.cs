@@ -57,10 +57,13 @@ public class ProxyServer(int port, string origin)
         await using var stream = listenerResponse.OutputStream;
         await stream.WriteAsync(content);
     }
+    
+    #region Print Methods
 
     private static void PrintRequest(HttpListenerContext context)
     {
         Console.WriteLine($"{context.Request.HttpMethod} {context.Request.Url!.AbsoluteUri}");
+        Console.WriteLine($"Status Code: {context.Response.StatusCode}\n");
         PrintRequestHeaders(context.Request);
         PrintResponseHeaders(context.Response);
         Console.WriteLine();
@@ -81,4 +84,6 @@ public class ProxyServer(int port, string origin)
             Console.WriteLine($"{header}: {response.Headers[header]}");
         Console.WriteLine();
     }
+    
+    #endregion
 }
