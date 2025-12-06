@@ -52,10 +52,8 @@ public class ProxyServer(int port, string origin)
         listenerResponse.StatusCode = (int)responseMessage.StatusCode;
         listenerResponse.ContentType = responseMessage.Content.Headers.ContentType?.MediaType;
 
-        var content = await responseMessage.Content.ReadAsByteArrayAsync();
-
-        await using var stream = listenerResponse.OutputStream;
-        await stream.WriteAsync(content);
+        await responseMessage.Content.CopyToAsync(listenerResponse.OutputStream);
+        listenerResponse.OutputStream.Close();
     }
     
     #region Print Methods
