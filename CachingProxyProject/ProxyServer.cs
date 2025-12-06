@@ -1,4 +1,7 @@
 ﻿using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Net.Mime;
 using System.Text;
 
 namespace CachingProxyProject;
@@ -38,10 +41,22 @@ public class ProxyServer(int port, string origin)
         _listener.Stop();
     }
 
-    private static HttpRequestMessage ListenerRequestToMessage(HttpListenerRequest request)
+    private static HttpRequestMessage ListenerRequestToMessage(HttpListenerRequest listenerRequest)
     {
-        var method = new HttpMethod(request.HttpMethod);
-        var requestMessage = new HttpRequestMessage(method, request.RawUrl);
+        var requestMessage = new HttpRequestMessage(new HttpMethod(listenerRequest.HttpMethod), listenerRequest.RawUrl);
+        
+        if (listenerRequest.HasEntityBody)
+        {
+            requestMessage.Content = new StreamContent(listenerRequest.InputStream);
+        
+            // copy HttpListenerRequest content headers into HttpRequestMessage
+            foreach (string headerName in listenerRequest.Headers.Keys)
+            {
+                if (headerName.StartsWith("Content-"))
+                    requestMessage.Content.Headers.TryAddWithoutValidation(headerName, listenerRequest.Headers[headerName]);
+            }
+        }
+
         return requestMessage;
     }
 
