@@ -44,17 +44,24 @@ public class ProxyServer(int port, string origin)
     private static HttpRequestMessage ListenerRequestToMessage(HttpListenerRequest listenerRequest)
     {
         var requestMessage = new HttpRequestMessage(new HttpMethod(listenerRequest.HttpMethod), listenerRequest.RawUrl);
-        
         if (listenerRequest.HasEntityBody)
         {
-            requestMessage.Content = new StreamContent(listenerRequest.InputStream);
-        
+            var content = new StreamContent(listenerRequest.InputStream);
+
+            foreach (string headerName in listenerRequest.Headers.Keys)
+            {
+                if (headerName != "Host")
+                    requestMessage.Headers.TryAddWithoutValidation(headerName, listenerRequest.Headers[headerName]);
+            }
+            
             // copy HttpListenerRequest content headers into HttpRequestMessage
             foreach (string headerName in listenerRequest.Headers.Keys)
             {
                 if (headerName.StartsWith("Content-"))
-                    requestMessage.Content.Headers.TryAddWithoutValidation(headerName, listenerRequest.Headers[headerName]);
+                    content.Headers.TryAddWithoutValidation(headerName, listenerRequest.Headers[headerName]);
             }
+
+            requestMessage.Content = content;
         }
 
         return requestMessage;
