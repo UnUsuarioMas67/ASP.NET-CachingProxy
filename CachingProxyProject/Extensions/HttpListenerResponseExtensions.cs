@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace CachingProxyProject;
+namespace CachingProxyProject.Extensions;
 
 public static class HttpListenerResponseExtensions
 {
