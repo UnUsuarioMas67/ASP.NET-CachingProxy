@@ -47,12 +47,6 @@ public class ProxyServer(int port, string origin)
         if (listenerRequest.HasEntityBody)
         {
             var content = new StreamContent(listenerRequest.InputStream);
-
-            foreach (string headerName in listenerRequest.Headers.Keys)
-            {
-                if (headerName != "Host")
-                    requestMessage.Headers.TryAddWithoutValidation(headerName, listenerRequest.Headers[headerName]);
-            }
             
             // copy HttpListenerRequest content headers into HttpRequestMessage
             foreach (string headerName in listenerRequest.Headers.Keys)
@@ -72,12 +66,30 @@ public class ProxyServer(int port, string origin)
         HttpResponseMessage responseMessage)
     {
         listenerResponse.StatusCode = (int)responseMessage.StatusCode;
-        listenerResponse.ContentType = responseMessage.Content.Headers.ContentType?.MediaType;
 
-        await responseMessage.Content.CopyToAsync(listenerResponse.OutputStream);
+        // copy HttpResponseMessage content headers into HttpListenerResponse
+        foreach (var header in responseMessage.Headers)
+        {
+            var headerCollection = listenerResponse.Headers;
+            if (headerCollection[header.Key] != null)
+                headerCollection.Set(header.Key, string.Join(", ", header.Value));
+            else
+                headerCollection.Add(header.Key, string.Join(", ", header.Value));
+        }
+        
+        // foreach (var header in responseMessage.Content.Headers)
+        // {
+        //     var headerCollection = listenerResponse.Headers;
+        //     if (headerCollection[header.Key] != null)
+        //         headerCollection.Set(header.Key, string.Join(", ", header.Value));
+        //     else
+        //         headerCollection.Add(header.Key, string.Join(", ", header.Value));
+        // }
+        
+        await listenerResponse.OutputStream.WriteAsync(await responseMessage.Content.ReadAsByteArrayAsync());
         listenerResponse.OutputStream.Close();
     }
-    
+
     #region Print Methods
 
     private static void PrintRequest(HttpListenerContext context)
@@ -96,7 +108,7 @@ public class ProxyServer(int port, string origin)
             Console.WriteLine($"{header}: {request.Headers[header]}");
         Console.WriteLine();
     }
-    
+
     private static void PrintResponseHeaders(HttpListenerResponse response)
     {
         Console.WriteLine("---RESPONSE HEADERS---");
@@ -104,6 +116,6 @@ public class ProxyServer(int port, string origin)
             Console.WriteLine($"{header}: {response.Headers[header]}");
         Console.WriteLine();
     }
-    
+
     #endregion
 }
