@@ -9,6 +9,7 @@ public static class HttpListenerResponseExtensions
     {
         listenerResponse.StatusCode = (int)responseMessage.StatusCode;
         listenerResponse.Headers.AddHeadersFrom(responseMessage.Headers);
+        listenerResponse.AppendHeader("X-Cache", "miss");
         
         await listenerResponse.OutputStream.WriteAsync(await responseMessage.Content.ReadAsByteArrayAsync());
         listenerResponse.OutputStream.Close();
