@@ -28,10 +28,10 @@ public class ProxyServer(int port, string origin)
 
         var context = await _listener.GetContextAsync();
         var client = new HttpClient { BaseAddress = new Uri(Origin) };
-        var request = ListenerRequestToMessage(context.Request);
+        var request = context.Request.ToHttpRequestMessage();
         var response = await client.SendAsync(request);
         
-        await SetListenerResponseFromMessage(context.Response, response);
+        await context.Response.SetFromHttpResponseMessage(response);
         
         PrintRequest(context);
     }
@@ -39,55 +39,6 @@ public class ProxyServer(int port, string origin)
     public void Stop()
     {
         _listener.Stop();
-    }
-
-    private static HttpRequestMessage ListenerRequestToMessage(HttpListenerRequest listenerRequest)
-    {
-        var requestMessage = new HttpRequestMessage(new HttpMethod(listenerRequest.HttpMethod), listenerRequest.RawUrl);
-        if (listenerRequest.HasEntityBody)
-        {
-            var content = new StreamContent(listenerRequest.InputStream);
-            
-            // copy HttpListenerRequest content headers into HttpRequestMessage
-            foreach (string headerName in listenerRequest.Headers.Keys)
-            {
-                if (headerName.StartsWith("Content-"))
-                    content.Headers.TryAddWithoutValidation(headerName, listenerRequest.Headers[headerName]);
-            }
-
-            requestMessage.Content = content;
-        }
-
-        return requestMessage;
-    }
-
-    private static async Task SetListenerResponseFromMessage(
-        HttpListenerResponse listenerResponse,
-        HttpResponseMessage responseMessage)
-    {
-        listenerResponse.StatusCode = (int)responseMessage.StatusCode;
-
-        // copy HttpResponseMessage content headers into HttpListenerResponse
-        foreach (var header in responseMessage.Headers)
-        {
-            var headerCollection = listenerResponse.Headers;
-            if (headerCollection[header.Key] != null)
-                headerCollection.Set(header.Key, string.Join(", ", header.Value));
-            else
-                headerCollection.Add(header.Key, string.Join(", ", header.Value));
-        }
-        
-        // foreach (var header in responseMessage.Content.Headers)
-        // {
-        //     var headerCollection = listenerResponse.Headers;
-        //     if (headerCollection[header.Key] != null)
-        //         headerCollection.Set(header.Key, string.Join(", ", header.Value));
-        //     else
-        //         headerCollection.Add(header.Key, string.Join(", ", header.Value));
-        // }
-        
-        await listenerResponse.OutputStream.WriteAsync(await responseMessage.Content.ReadAsByteArrayAsync());
-        listenerResponse.OutputStream.Close();
     }
 
     #region Print Methods
