@@ -29,6 +29,7 @@ public class ProxyServer(int port, string origin)
         var response = await client.SendAsync(request);
         
         await context.Response.SetFromHttpResponseMessage(response);
+        context.Response.OutputStream.Close();
         
         PrintRequest(context);
     }

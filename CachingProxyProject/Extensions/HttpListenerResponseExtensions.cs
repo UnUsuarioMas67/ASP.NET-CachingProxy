@@ -13,7 +13,6 @@ public static class HttpListenerResponseExtensions
         listenerResponse.AppendHeader("X-Cache", "miss");
         
         await listenerResponse.OutputStream.WriteAsync(await responseMessage.Content.ReadAsByteArrayAsync());
-        listenerResponse.OutputStream.Close();
     }
 
     private static void AddHeadersFrom(this WebHeaderCollection target,
