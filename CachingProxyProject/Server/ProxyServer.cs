@@ -27,16 +27,16 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
 
         var context = await _listener.GetContextAsync();
         
-        Console.WriteLine($"{context.Request.HttpMethod} {context.Request.Url!.AbsoluteUri}\n");
+        PrintHelper.PrintRequestUri(context.Request);
         
         var cacheResponse = await GetCacheResponseFromRedis(context);
         
-        PrintRequestHeaders(context.Request);
+        PrintHelper.PrintRequestHeaders(context.Request);
         
         if (cacheResponse != null)
         {
             await context.Response.SetFromCacheResponse(cacheResponse);
-            PrintResponseHeaders(context.Response);
+            PrintHelper.PrintResponseHeaders(context.Response);
         }
         else
         {
@@ -45,7 +45,7 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
             var response = await client.SendAsync(request);
 
             await context.Response.SetFromHttpResponseMessage(response);
-            PrintResponseHeaders(context.Response);
+            PrintHelper.PrintResponseHeaders(context.Response);
             
             await SaveCacheResponseToRedis(context, response.Content);
         }
@@ -97,25 +97,4 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
 
     private string RedisKey(HttpListenerContext context)
         => $"{Origin}{context.Request.RawUrl}";
-
-    #region Print Methods
-
-    private static void PrintRequestHeaders(HttpListenerRequest request)
-    {
-        Console.WriteLine("---REQUEST HEADERS---");
-        foreach (var header in request.Headers.AllKeys)
-            Console.WriteLine($"{header}: {request.Headers[header]}");
-        Console.WriteLine();
-    }
-
-    private static void PrintResponseHeaders(HttpListenerResponse response)
-    {
-        Console.WriteLine("---RESPONSE HEADERS---");
-        Console.WriteLine($"STATUS CODE: {response.StatusCode}\n");
-        foreach (var header in response.Headers.AllKeys)
-            Console.WriteLine($"{header}: {response.Headers[header]}");
-        Console.WriteLine();
-    }
-
-    #endregion
 }
