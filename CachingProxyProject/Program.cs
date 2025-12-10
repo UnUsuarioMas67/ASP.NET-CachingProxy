@@ -1,7 +1,8 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System.Net;
-using CachingProxyProject;
+using CachingProxyProject.Caching;
+using CachingProxyProject.Server;
 using Cocona;
 using Microsoft.Extensions.Configuration;
 

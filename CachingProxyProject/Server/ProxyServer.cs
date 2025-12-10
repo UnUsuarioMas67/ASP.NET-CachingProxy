@@ -1,7 +1,8 @@
 ﻿using System.Net;
+using CachingProxyProject.Caching;
 using CachingProxyProject.Extensions;
 
-namespace CachingProxyProject;
+namespace CachingProxyProject.Server;
 
 public class ProxyServer(int port, string origin, RedisConnection redis)
 {

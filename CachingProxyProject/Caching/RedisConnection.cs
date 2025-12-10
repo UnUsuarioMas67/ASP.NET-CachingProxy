@@ -2,7 +2,7 @@
 using NRedisStack.RedisStackCommands;
 using StackExchange.Redis;
 
-namespace CachingProxyProject;
+namespace CachingProxyProject.Caching;
 
 public class RedisConnection
 {
