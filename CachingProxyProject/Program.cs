@@ -3,14 +3,20 @@
 using System.Net;
 using CachingProxyProject;
 using Cocona;
+using Microsoft.Extensions.Configuration;
 
+var config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.Development.json")
+    .Build();
 
 CoconaLiteApp.Run(async ([Option('p')] int port, [Option('o')] string origin) =>
 {
     Console.WriteLine($"Starting server at port {port}...\nOrigin address: {origin}\n\n");
 
-    var proxyServer = new ProxyServer(port, origin);
+    var redis = new RedisConnection(config);
+    var proxyServer = new ProxyServer(port, origin, redis);
     proxyServer.Start();
+    
     Console.CancelKeyPress += (sender, eventArgs) => { proxyServer.Stop(); };
 
     while (true)
