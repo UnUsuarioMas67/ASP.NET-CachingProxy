@@ -26,11 +26,17 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
             return;
 
         var context = await _listener.GetContextAsync();
+        
+        Console.WriteLine($"{context.Request.HttpMethod} {context.Request.Url!.AbsoluteUri}\n");
+        
         var cacheResponse = await GetCacheResponseFromRedis(context);
-
+        
+        PrintRequestHeaders(context.Request);
+        
         if (cacheResponse != null)
         {
             await context.Response.SetFromCacheResponse(cacheResponse);
+            PrintResponseHeaders(context.Response);
         }
         else
         {
@@ -39,11 +45,13 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
             var response = await client.SendAsync(request);
 
             await context.Response.SetFromHttpResponseMessage(response);
+            PrintResponseHeaders(context.Response);
+            
             await SaveCacheResponseToRedis(context, response.Content);
         }
         
         context.Response.OutputStream.Close();
-        PrintRequest(context);
+        Console.WriteLine("\n\n");
     }
 
     public void Stop()
@@ -55,14 +63,17 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
     {
         // only allow get requests to be cached
         if (context.Request.HttpMethod != "GET")
+        {
+            Console.WriteLine("Caching is only allowed for GET requests\n");
             return null;
+        }
 
         Console.WriteLine("Querying from cache...");
         
         var redisKey = RedisKey(context);
         var cacheResponse = await redis.GetJson<CacheResponse>(redisKey);
 
-        Console.WriteLine(cacheResponse != null ? "Found in cache" : "Not in cache. Requesting from server...");
+        Console.WriteLine((cacheResponse != null ? "Found in cache" : "Not in cache. Requesting from server...") + "\n");
 
         return cacheResponse;
     }
@@ -89,15 +100,6 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
 
     #region Print Methods
 
-    private static void PrintRequest(HttpListenerContext context)
-    {
-        Console.WriteLine($"{context.Request.HttpMethod} {context.Request.Url!.AbsoluteUri}");
-        Console.WriteLine($"Status Code: {context.Response.StatusCode}\n");
-        PrintRequestHeaders(context.Request);
-        PrintResponseHeaders(context.Response);
-        Console.WriteLine();
-    }
-
     private static void PrintRequestHeaders(HttpListenerRequest request)
     {
         Console.WriteLine("---REQUEST HEADERS---");
@@ -109,6 +111,7 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
     private static void PrintResponseHeaders(HttpListenerResponse response)
     {
         Console.WriteLine("---RESPONSE HEADERS---");
+        Console.WriteLine($"STATUS CODE: {response.StatusCode}\n");
         foreach (var header in response.Headers.AllKeys)
             Console.WriteLine($"{header}: {response.Headers[header]}");
         Console.WriteLine();
