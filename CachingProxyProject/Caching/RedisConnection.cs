@@ -41,4 +41,14 @@ public class RedisConnection
 
     public async Task<T?> GetJson<T>(string key)
         => await _muxer.GetDatabase().JSON().GetAsync<T>(Prefix + key);
+
+    public async Task Clear()
+    {
+        var server = _muxer.GetServer(_muxer.GetEndPoints().First());
+        var keys = server.Keys(pattern: $"{Prefix}*");
+        var db = _muxer.GetDatabase();
+        
+        foreach (var key in keys)
+            await db.KeyDeleteAsync(key);
+    }
 }
