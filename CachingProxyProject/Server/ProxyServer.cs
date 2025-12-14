@@ -47,7 +47,9 @@ public class ProxyServer(int port, string origin, RedisConnection redis)
             await context.Response.SetFromHttpResponseMessage(response);
             PrintHelper.PrintResponseHeaders(context.Response);
             
-            await SaveCacheResponseToRedis(context, response.Content);
+            // only cache successful responses
+            if (response.IsSuccessStatusCode)
+                await SaveCacheResponseToRedis(context, response.Content);
         }
         
         context.Response.OutputStream.Close();
